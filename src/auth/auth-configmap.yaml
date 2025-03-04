@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: auth-configmap
+data:
+    # reference to localhost from kubernetes
+    POSTGRES_HOST: "postgres-auth.co3ggqmkosq2.us-east-1.rds.amazonaws.com"
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "ziliscite"
+    POSTGRES_DB: "auth"

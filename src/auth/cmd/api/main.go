@@ -26,13 +26,15 @@ func newApplication(config Config, us service.UserService) *application {
 }
 
 func main() {
-	cfg := getConfig()
-	db.AutoMigrate(cfg.db.dsn)
+	slog.Info("Hallow World")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	cfg := getConfig()
+	db.AutoMigrate(cfg.db.dsn())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	pool, err := db.Open(ctx, cfg.db.dsn)
+	pool, err := db.Open(ctx, cfg.db.dsn())
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)

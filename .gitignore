@@ -1,3 +1,7 @@
 .idea
 
+src/auth/.env.dev
+src/auth/secrets.yaml
+
+docker-compose.yml
 .env
