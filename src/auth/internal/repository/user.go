@@ -63,7 +63,7 @@ func (u userRepo) GetByEmail(ctx context.Context, email string) (*domain.User, e
 func (u userRepo) Insert(ctx context.Context, user *domain.User) error {
 	query := `
         INSERT INTO users (username, email, password_hash) 
-        VALUES ($1, $2, $3, $4)
+        VALUES ($1, $2, $3)
         RETURNING id
 	`
 

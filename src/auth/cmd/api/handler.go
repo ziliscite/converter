@@ -6,6 +6,7 @@ import (
 	"github.com/ziliscite/video-to-mp3/auth/internal/service"
 	"github.com/ziliscite/video-to-mp3/auth/pkg/token"
 	"net/http"
+	"strings"
 )
 
 func (app *application) register(c *gin.Context) {
@@ -62,7 +63,7 @@ func (app *application) login(c *gin.Context) {
 		return
 	}
 
-	accessToken, exp, err := token.Create(user.ID, user.IsAdmin, user.Email, app.cfg.secrets)
+	accessToken, exp, err := token.Create(user, app.cfg.secrets)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -71,6 +72,32 @@ func (app *application) login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
 		"exp":          exp,
-		"is_admin":     user.IsAdmin,
+	})
+}
+
+func (app *application) validate(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if len(authHeader) < 7 || strings.ToLower(authHeader[0:6]) != "bearer" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
+
+	accessToken := strings.TrimSpace(authHeader[7:])
+	if accessToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
+
+	user, err := token.Validate(accessToken, app.cfg.secrets)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":       user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"is_admin": user.IsAdmin,
 	})
 }
