@@ -6,4 +6,6 @@ src/auth/secrets.yaml
 docker-compose.yml
 .env
 
+src/gateway/.env
 src/gateway/.env.dev
+src/gateway/secrets.yaml

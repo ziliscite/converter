@@ -19,10 +19,11 @@ type Address struct {
 }
 
 type Config struct {
-	port    int
-	secrets string
-	addr    Address
-	aws     AWS
+	port       int
+	encryptKey string
+	secrets    string
+	addr       Address
+	aws        AWS
 }
 
 var (
@@ -32,11 +33,17 @@ var (
 
 func getConfig() Config {
 	once.Do(func() {
+		//if err := godotenv.Load(".env.dev"); err != nil {
+		//	slog.Error("Error loading .env file", "error", err)
+		//	os.Exit(1)
+		//}
+
 		instance = Config{}
 
 		flag.IntVar(&instance.port, "port", 8080, "Server Port")
 
 		flag.StringVar(&instance.secrets, "secrets", os.Getenv("JWT_SECRETS"), "256 bytes of secrets")
+		flag.StringVar(&instance.encryptKey, "key", os.Getenv("ENCRYPT_KEY"), "Encryption key")
 
 		flag.StringVar(&instance.addr.auth, "auth-addr", os.Getenv("JWT_SECRETS"), "Authentication Service Address")
 

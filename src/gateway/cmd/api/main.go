@@ -1,40 +1,51 @@
 package main
 
 import (
-	"context"
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-resty/resty/v2"
+	"github.com/ziliscite/video-to-mp3/gateway/internal/repository"
+	"github.com/ziliscite/video-to-mp3/gateway/internal/service"
+	"github.com/ziliscite/video-to-mp3/gateway/pkg/encryptor"
 	"log/slog"
-	"net/http"
 	"os"
-	"time"
 )
 
 type application struct {
 	cfg Config
-	s3c *s3.Client
 	rc  *resty.Client
+	fs  service.FileService
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	cfg := getConfig()
+	client := s3.NewFromConfig(aws.Config{
+		Region: cfg.aws.s3Region,
+		Credentials: credentials.NewStaticCredentialsProvider(
+			cfg.aws.accessKeyId,
+			cfg.aws.secretAccessKey,
+			"",
+		),
+	})
 
-	awsCfg, err := config.LoadDefaultConfig(ctx)
+	enc, err := encryptor.NewEncryptor(cfg.encryptKey)
 	if err != nil {
-		slog.Error("Failed to load default AWS config", "error", err.Error())
+		slog.Error("Failed to create encryptor", "error", err)
 		os.Exit(1)
 	}
-	client := s3.NewFromConfig(awsCfg)
+
+	fileRepository := repository.NewStore(client)
+	fileService := service.NewUploadService(enc, fileRepository)
 
 	app := application{
 		cfg: cfg,
-		s3c: client,
 		rc:  resty.New(),
+		fs:  fileService,
 	}
 
-	app.run()
+	if err := app.run(); err != nil {
+		slog.Error("Error running application", "error", err.Error())
+		os.Exit(1)
+	}
 }
