@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -14,6 +15,17 @@ type AWS struct {
 	secretAccessKey          string
 }
 
+type RabbitMQ struct {
+	host     string
+	username string
+	password string
+	port     string
+}
+
+func (r RabbitMQ) dsn() string {
+	return fmt.Sprintf("amqps://%s:%s@%s:%s", r.username, r.password, r.host, r.port)
+}
+
 type Address struct {
 	auth string
 }
@@ -24,6 +36,7 @@ type Config struct {
 	secrets    string
 	addr       Address
 	aws        AWS
+	rabbit     RabbitMQ
 }
 
 var (
@@ -52,6 +65,11 @@ func getConfig() Config {
 		flag.StringVar(&instance.aws.s3CloudFrontDistribution, "s3-cf", os.Getenv("S3_CLOUDFRONT_DISTRIBUTION"), "S3 CloudFront distribution ID")
 		flag.StringVar(&instance.aws.accessKeyId, "aws-access-key-id", os.Getenv("AWS_ACCESS_KEY_ID"), "AWS access key ID")
 		flag.StringVar(&instance.aws.secretAccessKey, "aws-secret-access-key", os.Getenv("AWS_SECRET_ACCESS_KEY"), "AWS secret access key")
+
+		flag.StringVar(&instance.rabbit.host, "rabbit-host", os.Getenv("AMQP_HOST"), "RabbitMQ host")
+		flag.StringVar(&instance.rabbit.username, "rabbit-username", os.Getenv("AMQP_USERNAME"), "RabbitMQ username")
+		flag.StringVar(&instance.rabbit.password, "rabbit-password", os.Getenv("AMQP_PASSWORD"), "RabbitMQ password")
+		flag.StringVar(&instance.rabbit.port, "rabbit-port", os.Getenv("AMQP_PORT"), "RabbitMQ password")
 
 		flag.Parse()
 	})

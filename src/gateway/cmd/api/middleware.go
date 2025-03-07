@@ -39,13 +39,11 @@ func (app *application) auth() gin.HandlerFunc {
 
 func (app *application) admin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userCtx, ok := c.Get("user")
-		if !ok {
-			c.JSON(http.StatusForbidden, gin.H{"error": "invalid user"})
+		user, err := app.extractUser(c)
+		if err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 			return
 		}
-
-		user := userCtx.(domain.User)
 
 		if !user.IsAdmin {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})

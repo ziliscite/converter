@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/ziliscite/video-to-mp3/gateway/internal/domain"
-	"io"
 	"net/http"
 )
 
@@ -81,29 +80,15 @@ func (app *application) upload(c *gin.Context) {
 		return
 	}
 
-	video, err := file.Open()
+	video, contentType, err := app.extractFile(file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open file"})
+		app.serverError(c)
 		return
 	}
 	defer video.Close()
 
-	// read the first 512 bytes
-	buffer := make([]byte, 512)
-	if _, err = video.Read(buffer); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read file"})
-		return
-	}
-
-	contentType := http.DetectContentType(buffer)
 	if contentType != "video/mp4" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid video format"})
-		return
-	}
-
-	// reset the file pointer so that s3 doesn't read the video file from bytes 513, but from 0
-	if _, err = video.Seek(0, io.SeekStart); err != nil {
-		app.serverError(c)
 		return
 	}
 
@@ -114,7 +99,28 @@ func (app *application) upload(c *gin.Context) {
 		return
 	}
 
+	user, err := app.extractUser(c)
+	if err != nil {
+		// cuz previously we authorized it, then now the error is internal
+		app.serverError(c)
+		return
+	}
+
+	// send S3 video name, key, and user id to converter via rabbitmq.
+	// after the video is converted,
+	// the metadata (name, key, user id) will be stored in the database
+	// with the mp3 key as well, maybe with status
+
+	if err := app.fp.PublishVideo(&domain.Video{
+		UserId: user.ID, UserEmail: user.Email, FileName: file.Filename, FileKey: key,
+	}); err != nil {
+		app.serverError(c)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"url": app.fileUrl(key, app.cfg.aws.s3Bucket),
+		"message": fmt.Sprintf("video has been uploaded, you will be notified through %s soon", user.Email),
+		// the other service doesn't need file url
+		"video_url": app.fileUrl(key, app.cfg.aws.s3Bucket),
 	})
 }

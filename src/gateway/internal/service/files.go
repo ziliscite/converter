@@ -17,13 +17,13 @@ type FileService interface {
 
 type fileService struct {
 	en *encryptor.Encryptor
-	r  repository.Write
+	wr repository.Write
 }
 
 func NewUploadService(en *encryptor.Encryptor, r repository.Write) FileService {
 	return &fileService{
 		en: en,
-		r:  r,
+		wr: r,
 	}
 }
 
@@ -35,5 +35,5 @@ func (u *fileService) UploadVideo(ctx context.Context, filename, bucket string, 
 
 	// Maybe saves the file metadata to mongodb
 
-	return u.r.Save(ctx, fmt.Sprintf("%s.mp4", fileKey), "video/mp4", bucket, file)
+	return u.wr.Save(ctx, fmt.Sprintf("%s.mp4", fileKey), "video/mp4", bucket, file)
 }
