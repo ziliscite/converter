@@ -24,7 +24,7 @@ spec:
           image: ziliscite/video-to-mp4-gateway
           imagePullPolicy: Always
           ports:
-            - containerPort: 5000
+            - containerPort: 8080
               protocol: TCP
           envFrom:
             - configMapRef:

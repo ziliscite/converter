@@ -8,3 +8,4 @@ data:
     AMQP_HOST: "b-b96ce6cb-6f40-47e3-9208-78102caa3a82.mq.ap-southeast-1.amazonaws.com"
     AMQP_USERNAME: "ziliscite"
     AMQP_PORT: "5671"
+    AMQP_QUEUE_NAME: "video-queue"

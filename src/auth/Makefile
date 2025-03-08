@@ -16,3 +16,8 @@ run:
 	-e JWT_SECRETS=$(JWT_SECRETS) \
 	ziliscite/video-to-mp4-auth
 
+.PHONY: deploy
+deploy:
+	kubectl apply -f ./
+
+

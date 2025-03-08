@@ -9,3 +9,7 @@ docker-compose.yml
 src/gateway/.env
 src/gateway/.env.dev
 src/gateway/secrets.yaml
+
+src/converter/.env
+src/converter/.env.dev
+src/converter/secrets.yaml

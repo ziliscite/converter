@@ -20,6 +20,7 @@ type RabbitMQ struct {
 	username string
 	password string
 	port     string
+	queue    string
 }
 
 func (r RabbitMQ) dsn() string {
@@ -58,7 +59,7 @@ func getConfig() Config {
 		flag.StringVar(&instance.secrets, "secrets", os.Getenv("JWT_SECRETS"), "256 bytes of secrets")
 		flag.StringVar(&instance.encryptKey, "key", os.Getenv("ENCRYPT_KEY"), "Encryption key")
 
-		flag.StringVar(&instance.addr.auth, "auth-addr", os.Getenv("JWT_SECRETS"), "Authentication Service Address")
+		flag.StringVar(&instance.addr.auth, "auth-addr", os.Getenv("AUTH_SERVICE_ADDRESS"), "Authentication Service Address")
 
 		flag.StringVar(&instance.aws.s3Bucket, "s3-bucket", os.Getenv("S3_BUCKET"), "S3 bucket name")
 		flag.StringVar(&instance.aws.s3Region, "s3-region", os.Getenv("S3_REGION"), "S3 region")
@@ -70,6 +71,7 @@ func getConfig() Config {
 		flag.StringVar(&instance.rabbit.username, "rabbit-username", os.Getenv("AMQP_USERNAME"), "RabbitMQ username")
 		flag.StringVar(&instance.rabbit.password, "rabbit-password", os.Getenv("AMQP_PASSWORD"), "RabbitMQ password")
 		flag.StringVar(&instance.rabbit.port, "rabbit-port", os.Getenv("AMQP_PORT"), "RabbitMQ password")
+		flag.StringVar(&instance.rabbit.queue, "rabbit-queue", os.Getenv("AMQP_QUEUE_NAME"), "RabbitMQ queue")
 
 		flag.Parse()
 	})

@@ -47,9 +47,9 @@ func main() {
 	}
 
 	fileRepository := repository.NewStore(s3c)
-	fileService := service.NewUploadService(enc, fileRepository)
+	fileService := service.NewFileService(enc, fileRepository)
 
-	filePublisher, err := service.NewPublisher(conn)
+	filePublisher, err := service.NewPublisher(conn, cfg.rabbit.queue)
 	if err != nil {
 		slog.Error("Failed to create publisher", "error", err)
 		os.Exit(1)

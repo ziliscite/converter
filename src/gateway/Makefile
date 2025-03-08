@@ -8,3 +8,7 @@ build:
 .PHONY: push
 push:
 	docker push ziliscite/video-to-mp4-gateway:latest
+
+.PHONY: deploy
+deploy:
+	kubectl apply -f ./

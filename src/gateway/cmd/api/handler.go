@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const maxSize = 2 << 28 // 500~MB
+const maxSize = 1 << 29 // 512 MB
 
 func (app *application) login(c *gin.Context) {
 	var request struct {
@@ -93,7 +93,7 @@ func (app *application) upload(c *gin.Context) {
 	}
 
 	// store to s3 here
-	key, err := app.fs.UploadVideo(c.Request.Context(), file.Filename, app.cfg.aws.s3Bucket, video)
+	key, err := app.fs.UploadVideo(c.Request.Context(), file.Size, file.Filename, app.cfg.aws.s3Bucket, video)
 	if err != nil {
 		app.serverError(c)
 		return
@@ -112,8 +112,15 @@ func (app *application) upload(c *gin.Context) {
 	// with the mp3 key as well, maybe with status
 
 	if err := app.fp.PublishVideo(&domain.Video{
-		UserId: user.ID, UserEmail: user.Email, FileName: file.Filename, FileKey: key,
+		UserId: user.ID, UserEmail: user.Email, FileName: file.Filename,
+		FileSize: file.Size, FileKey: key,
 	}); err != nil {
+
+		go func() {
+			// delete the file from s3 if the message failed to be sent
+			_ = app.fs.DeleteVideo(c.Request.Context(), app.cfg.aws.s3Bucket, key)
+		}()
+
 		app.serverError(c)
 		return
 	}

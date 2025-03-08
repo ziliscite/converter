@@ -15,7 +15,7 @@ type publisher struct {
 	vq amqp.Queue
 }
 
-func NewPublisher(ac *amqp.Connection) (FilePublisher, error) {
+func NewPublisher(ac *amqp.Connection, queueName string) (FilePublisher, error) {
 	// create a new channel for the publisher
 	ch, err := ac.Channel()
 	if err != nil {
@@ -25,7 +25,7 @@ func NewPublisher(ac *amqp.Connection) (FilePublisher, error) {
 
 	// declare the video queue once during publisher initialization
 	vq, err := ch.QueueDeclare(
-		"send_mail",
+		queueName,
 		false,
 		false,
 		false,
