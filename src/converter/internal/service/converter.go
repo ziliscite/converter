@@ -42,10 +42,11 @@ type converterService struct {
 	b  bucket
 }
 
-func NewConverterService(cv *domain.Converter, fr repository.FileStore, en *encryptor.Encryptor, mp4Bucket, mp3Bucket string) ConverterService {
+func NewConverterService(cv *domain.Converter, fr repository.FileStore, mr repository.MetadataRepository, en *encryptor.Encryptor, mp4Bucket, mp3Bucket string) ConverterService {
 	return &converterService{
 		cv: cv,
 		fr: fr,
+		mr: mr,
 		en: en,
 		b: bucket{
 			mp4: mp4Bucket,

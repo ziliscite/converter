@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -8,6 +9,8 @@ import (
 	"github.com/ziliscite/video-to-mp3/converter/external/ffmpeg"
 	"github.com/ziliscite/video-to-mp3/converter/internal/domain"
 	"github.com/ziliscite/video-to-mp3/converter/internal/service"
+	"github.com/ziliscite/video-to-mp3/converter/pkg/db"
+	"time"
 
 	"github.com/ziliscite/video-to-mp3/converter/internal/repository"
 	"github.com/ziliscite/video-to-mp3/converter/pkg/encryptor"
@@ -18,6 +21,17 @@ import (
 
 func main() {
 	cfg := getConfig()
+	db.AutoMigrate(cfg.db.dsn())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	pool, err := db.Open(ctx, cfg.db.dsn())
+	if err != nil {
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
+	}
+
 	s3c := s3.NewFromConfig(aws.Config{
 		Region: cfg.aws.s3Region,
 		Credentials: credentials.NewStaticCredentialsProvider(
@@ -49,7 +63,9 @@ func main() {
 	cvt := domain.NewConverter(ffp)
 	fr := repository.NewStore(s3c)
 
-	cvs := service.NewConverterService(cvt, fr, enc, cfg.aws.s3bucket.mp4, cfg.aws.s3bucket.mp3)
+	mr := repository.NewMetadataRepo(pool)
+
+	cvs := service.NewConverterService(cvt, fr, mr, enc, cfg.aws.s3bucket.mp4, cfg.aws.s3bucket.mp3)
 
 	np, err := service.NewPublisher(conn, cfg.rabbit.queue.notification)
 	if err != nil {

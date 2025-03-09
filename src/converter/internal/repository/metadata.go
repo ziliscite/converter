@@ -21,6 +21,10 @@ type MetadataRepository interface {
 	MetadataWriter
 }
 
+func NewMetadataRepo(db *pgxpool.Pool) MetadataRepository {
+	return &metadataRepo{db: db}
+}
+
 type metadataRepo struct {
 	db *pgxpool.Pool
 }
