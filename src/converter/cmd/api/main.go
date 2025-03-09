@@ -51,7 +51,13 @@ func main() {
 
 	cvs := service.NewConverterService(cvt, fr, enc, cfg.aws.s3bucket.mp4, cfg.aws.s3bucket.mp3)
 
-	con, err := newConsumer(cfg, conn, cvs)
+	np, err := service.NewPublisher(conn, cfg.rabbit.queue.notification)
+	if err != nil {
+		slog.Error("Failed to create publisher", "error", err)
+		os.Exit(1)
+	}
+
+	con, err := newConsumer(cfg, conn, cvs, np)
 	if err != nil {
 		slog.Error("Failed to create consumer", "error", err)
 		os.Exit(1)

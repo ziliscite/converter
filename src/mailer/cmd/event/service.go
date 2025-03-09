@@ -39,13 +39,13 @@ func newService(cfg Config, amc *amqp.Connection, mr *internal.Mailer) (*listene
 	}, nil
 }
 
-func (s *listener) sendNotification(body []byte) error {
+func (s *listener) sendNotification(body []byte, email string) error {
 	var mail domain.Metadata
 	if err := json.Unmarshal(body, &mail); err != nil {
 		return err
 	}
 
-	return s.mr.Send(mail.UserEmail, "mp4_audio_notification.tmpl", map[string]interface{}{
+	return s.mr.Send(email, "mp4_audio_notification.tmpl", map[string]interface{}{
 		"userID":   mail.UserId,
 		"filename": mail.FileName,
 		"videoKey": mail.VideoKey,

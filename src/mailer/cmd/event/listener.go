@@ -23,7 +23,13 @@ func (s *listener) listen() error {
 	forever := make(chan bool)
 	go func() {
 		for m := range mails {
-			if err = s.sendNotification(m.Body); err != nil {
+			email, ok := m.Headers["email"].(string)
+			if !ok {
+				m.Nack(false, false)
+				continue
+			}
+
+			if err = s.sendNotification(m.Body, email); err != nil {
 				switch {
 				case errors.Is(err, internal.ErrConnection) || errors.Is(err, amqp.ErrClosed):
 					m.Nack(false, true)
@@ -37,7 +43,7 @@ func (s *listener) listen() error {
 		}
 	}()
 
-	slog.Info("Listening for emails...")
+	slog.Info("Listening for notifications...")
 	<-forever
 	return nil
 }

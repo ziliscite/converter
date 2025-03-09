@@ -69,7 +69,7 @@ func (s *store) Save(ctx context.Context, fileKey, types, bucket string, file io
 	if err := s3.NewObjectExistsWaiter(s.s3c).Wait(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(fileKey),
-	}, time.Minute); err != nil {
+	}, 2*time.Minute); err != nil {
 		return fmt.Errorf("failed to confirm existence of uploaded file %s in bucket %s: %w", fileKey, bucket, err)
 	}
 
@@ -135,7 +135,14 @@ func (s *store) ReadLarge(ctx context.Context, bucket string, fileKey string) (i
 		Bucket: aws.String(bucket),
 		Key:    aws.String(fileKey),
 	}); err != nil {
-		return nil, fmt.Errorf("failed to download object %s from bucket %s: %w", fileKey, bucket, err)
+		var noKey *types.NoSuchKey
+		errors.As(err, &noKey)
+		switch {
+		case errors.As(err, &noKey):
+			return nil, ErrNotExist
+		default:
+			return nil, fmt.Errorf("failed to download object %s from bucket %s: %w", fileKey, bucket, err)
+		}
 	}
 
 	return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil

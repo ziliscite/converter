@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/smithy-go"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 	"github.com/ziliscite/video-to-mp3/converter/internal/repository"
 	"github.com/ziliscite/video-to-mp3/converter/pkg/encryptor"
 )
+
+var ErrInternal = errors.New("internal error")
 
 type ConverterMP4 interface {
 	// ConvertMP4 converts the video to mp3 format.
@@ -55,7 +58,16 @@ func (c *converterService) ConvertMP4(ctx context.Context, userId, filesize int6
 	// get the video file from S3
 	video, err := c.read(ctx, fmt.Sprintf("%s.mp4", filekey), filesize) // key is formatted as filekey.mp4
 	if err != nil {
-		return nil, fmt.Errorf("failed to read video file: %v", err)
+		var apiErr smithy.APIError
+		switch {
+		case errors.As(err, &apiErr):
+			switch apiErr.ErrorCode() {
+			case "SlowDown", "RequestTimeout", "RequestTimeTooSkewed", "OperationAborted", "ServiceUnavailable", "InternalError":
+				return nil, fmt.Errorf("%w: transient error occurred: %w", ErrInternal, err)
+			}
+		default:
+			return nil, fmt.Errorf("failed to read video file: %w", err)
+		}
 	}
 	defer video.Close()
 
@@ -110,7 +122,16 @@ func (c *converterService) storeMP3(ctx context.Context, mp3Path string) (string
 
 	// save the encrypted file to S3
 	if err = c.fr.Save(ctx, fmt.Sprintf("%s.%s", key, ext), c.mime(ext), c.b.mp3, mp3); err != nil {
-		return "", fmt.Errorf("failed to save converted file: %v", err)
+		var apiErr smithy.APIError
+		switch {
+		case errors.As(err, &apiErr):
+			switch apiErr.ErrorCode() {
+			case "SlowDown", "RequestTimeout", "RequestTimeTooSkewed", "OperationAborted", "ServiceUnavailable", "InternalError":
+				return "", fmt.Errorf("%w: transient error occurred: %w", ErrInternal, err)
+			}
+		default:
+			return "", fmt.Errorf("failed to upload file to bucket: %w", err)
+		}
 	}
 
 	return key, nil
