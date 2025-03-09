@@ -13,6 +13,34 @@ type consumer struct {
 	cfg Config
 	ac  *amqp.Connection
 	cvs service.ConverterService
+	vq  amqp.Queue
+}
+
+func newConsumer(cfg Config, ac *amqp.Connection, cvs service.ConverterService) (*consumer, error) {
+	ch, err := ac.Channel()
+	if err != nil {
+		return nil, err
+	}
+	defer ch.Close()
+
+	// make queue durable
+	vq, err := ch.QueueDeclare(cfg.rabbit.queue.video, true, false, false, false, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// notification queue will be declared on the publisher
+	//nq, err := ch.QueueDeclare(cfg.rabbit.queue.notification, true, false, false, false, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	return &consumer{
+		cfg: cfg,
+		ac:  ac,
+		cvs: cvs,
+		vq:  vq,
+	}, nil
 }
 
 func (c *consumer) consume() error {
@@ -24,13 +52,13 @@ func (c *consumer) consume() error {
 
 	// consume video queue
 	videos, err := ch.Consume(
-		c.cfg.rabbit.queue.video, // queue
-		"",                       // consumer
-		false,                    // no auto-ack
-		false,                    // exclusive
-		false,                    // no-local
-		false,                    // no-wait
-		nil,                      // args
+		c.vq.Name, // queue
+		"",        // consumer
+		false,     // no auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
 	)
 	if err != nil {
 		return err
@@ -66,6 +94,7 @@ func (c *consumer) consumeVideo(ctx context.Context, body []byte) error {
 
 	var video request
 	if err := json.Unmarshal(body, &video); err != nil {
+		// reject
 		return fmt.Errorf("error unmarshalling video: %v", err)
 	}
 

@@ -25,7 +25,7 @@ func NewPublisher(ac *amqp.Connection, queueName string) (FilePublisher, error) 
 	defer ch.Close()
 
 	// declare the video queue once during publisher initialization
-	vq, err := ch.QueueDeclare(queueName, false, false, false, false, nil)
+	vq, err := ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +55,9 @@ func (p *publisher) PublishVideo(ctx context.Context, video *domain.Video) error
 		false,
 		false,
 		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        msg,
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "application/json",
+			Body:         msg,
 		},
 	)
 }

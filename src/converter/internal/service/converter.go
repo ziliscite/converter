@@ -15,9 +15,9 @@ import (
 
 type ConverterMP4 interface {
 	// ConvertMP4 converts the video to mp3 format.
-	// takes the user id, file size, filename, and file key as arguments.
+	// takes the user id, file size, and file key as arguments.
 	// returns the audio key and an error if any.
-	ConvertMP4(ctx context.Context, userId, filesize int64, filename, filekey string) (string, error)
+	ConvertMP4(ctx context.Context, userId, filesize int64, filekey string) (string, error)
 }
 
 type ConverterService interface {
@@ -51,13 +51,20 @@ func NewConverterService(cv *domain.Converter, fr repository.FileStore, en *encr
 	}
 }
 
-func (c *converterService) ConvertMP4(ctx context.Context, userId, filesize int64, filename, filekey string) (string, error) {
+func (c *converterService) ConvertMP4(ctx context.Context, userId, filesize int64, filekey string) (string, error) {
 	// get the video file from S3
-	video, err := c.read(ctx, filekey, filesize)
+	video, err := c.read(ctx, fmt.Sprintf("%s.mp4", filekey), filesize) // key is formatted as filekey.mp4
 	if err != nil {
 		return "", fmt.Errorf("failed to read video file: %v", err)
 	}
 	defer video.Close()
+
+	// decrypt filekey to get filename
+	fb, err := c.en.Decrypt(filekey)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode filekey: %v", err)
+	}
+	filename := string(fb)
 
 	// convert the video to mp3
 	out, err := c.cv.ConvertMP4ToMP3(filename, video)
@@ -91,16 +98,15 @@ func (c *converterService) storeMP3(ctx context.Context, mp3Path string) (string
 	defer mp3.Close()
 
 	// encrypt the converted file
-	enc, err := c.en.Encrypt(mp3Path)
+	key, err := c.en.Encrypt(mp3Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to encrypt converted file: %v", err)
 	}
 
 	ext := filepath.Ext(mp3Path)
-	key := fmt.Sprintf("%s.%s", enc, ext)
 
 	// save the encrypted file to S3
-	if err = c.fr.Save(ctx, key, c.mime(ext), c.b.mp3, mp3); err != nil {
+	if err = c.fr.Save(ctx, fmt.Sprintf("%s.%s", key, ext), c.mime(ext), c.b.mp3, mp3); err != nil {
 		return "", fmt.Errorf("failed to save converted file: %v", err)
 	}
 
