@@ -112,7 +112,7 @@ func (app *application) upload(c *gin.Context) {
 	// with the mp3 key as well, maybe with status
 
 	if err = app.fp.PublishVideo(c.Request.Context(), &domain.Video{
-		UserId: user.ID, UserEmail: user.Email, FileName: file.Filename,
+		UserId: user.ID, UserEmail: user.Email,
 		FileSize: file.Size, FileKey: key,
 	}); err != nil {
 

@@ -13,3 +13,7 @@ src/gateway/secrets.yaml
 src/converter/.env
 src/converter/.env.dev
 src/converter/secrets.yaml
+
+src/mailer/.env
+src/mailer/.env.dev
+src/mailer/secrets.yaml

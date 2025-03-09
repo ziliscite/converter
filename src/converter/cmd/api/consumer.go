@@ -87,7 +87,6 @@ func (c *consumer) consumeVideo(ctx context.Context, body []byte) error {
 	type request struct {
 		UserId    int64  `json:"user_id"`
 		UserEmail string `json:"user_email"`
-		FileName  string `json:"file_name"`
 		FileSize  int64  `json:"file_size"`
 		FileKey   string `json:"file_key"`
 	}
@@ -98,7 +97,7 @@ func (c *consumer) consumeVideo(ctx context.Context, body []byte) error {
 		return fmt.Errorf("error unmarshalling video: %v", err)
 	}
 
-	mp3Key, err := c.cvs.ConvertMP4(ctx, video.UserId, video.FileSize, video.FileName, video.FileKey)
+	result, err := c.cvs.ConvertMP4(ctx, video.UserId, video.FileSize, video.FileKey)
 	if err != nil {
 		return fmt.Errorf("error converting video: %v", err)
 	}

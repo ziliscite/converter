@@ -17,7 +17,7 @@ type ConverterMP4 interface {
 	// ConvertMP4 converts the video to mp3 format.
 	// takes the user id, file size, and file key as arguments.
 	// returns the audio key and an error if any.
-	ConvertMP4(ctx context.Context, userId, filesize int64, filekey string) (string, error)
+	ConvertMP4(ctx context.Context, userId, filesize int64, filekey string) (*domain.Metadata, error)
 }
 
 type ConverterService interface {
@@ -51,42 +51,45 @@ func NewConverterService(cv *domain.Converter, fr repository.FileStore, en *encr
 	}
 }
 
-func (c *converterService) ConvertMP4(ctx context.Context, userId, filesize int64, filekey string) (string, error) {
+func (c *converterService) ConvertMP4(ctx context.Context, userId, filesize int64, filekey string) (*domain.Metadata, error) {
 	// get the video file from S3
 	video, err := c.read(ctx, fmt.Sprintf("%s.mp4", filekey), filesize) // key is formatted as filekey.mp4
 	if err != nil {
-		return "", fmt.Errorf("failed to read video file: %v", err)
+		return nil, fmt.Errorf("failed to read video file: %v", err)
 	}
 	defer video.Close()
 
 	// decrypt filekey to get filename
 	fb, err := c.en.Decrypt(filekey)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode filekey: %v", err)
+		return nil, fmt.Errorf("failed to decode filekey: %v", err)
 	}
 	filename := string(fb)
 
 	// convert the video to mp3
 	out, err := c.cv.ConvertMP4ToMP3(filename, video)
 	if err != nil {
-		return "", fmt.Errorf("failed to convert video: %v", err)
+		return nil, fmt.Errorf("failed to convert video: %v", err)
 	}
 	defer os.Remove(out)
 
 	// encrypt and store the mp3
 	audioKey, err := c.storeMP3(ctx, out)
 	if err != nil {
-		return "", fmt.Errorf("failed to process and store mp3: %v", err)
+		return nil, fmt.Errorf("failed to process and store mp3: %v", err)
+	}
+
+	metadata := &domain.Metadata{
+		UserId: userId, FileName: filename,
+		VideoKey: filekey, AudioKey: audioKey,
 	}
 
 	// if all is well, save the metadata to the database;
-	if err = c.saveMetadata(ctx, &domain.Metadata{
-		UserId: userId, FileName: filename, VideoKey: filekey, AudioKey: audioKey,
-	}); err != nil {
-		return "", fmt.Errorf("failed to save metadata: %v", err)
+	if err = c.saveMetadata(ctx, metadata); err != nil {
+		return nil, fmt.Errorf("failed to save metadata: %v", err)
 	}
 
-	return audioKey, nil
+	return metadata, nil
 }
 
 func (c *converterService) storeMP3(ctx context.Context, mp3Path string) (string, error) {
