@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ziliscite/video-to-mp3/gateway/internal/domain"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 )
@@ -54,4 +55,24 @@ func (app *application) extractFile(header *multipart.FileHeader) (multipart.Fil
 	}
 
 	return file, contentType, nil
+}
+
+// the background() helper accepts an arbitrary function as a parameter.
+func (app *application) background(fn func()) {
+	// increment the WaitGroup counter.
+	app.wg.Add(1)
+
+	go func() {
+		// use defer to decrement the WaitGroup counter before the goroutine returns.
+		defer app.wg.Done()
+
+		// run a deferred function which uses recover() to catch any panic
+		defer func() {
+			if err := recover(); err != nil {
+				slog.Error("panic: %v", "error", err)
+			}
+		}()
+
+		fn()
+	}()
 }

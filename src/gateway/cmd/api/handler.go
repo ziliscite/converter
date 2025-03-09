@@ -111,15 +111,14 @@ func (app *application) upload(c *gin.Context) {
 	// the metadata (name, key, user id) will be stored in the database
 	// with the mp3 key as well, maybe with status
 
-	if err := app.fp.PublishVideo(&domain.Video{
+	if err = app.fp.PublishVideo(c.Request.Context(), &domain.Video{
 		UserId: user.ID, UserEmail: user.Email, FileName: file.Filename,
 		FileSize: file.Size, FileKey: key,
 	}); err != nil {
 
-		go func() {
-			// delete the file from s3 if the message failed to be sent
+		app.background(func() {
 			_ = app.fs.DeleteVideo(c.Request.Context(), app.cfg.aws.s3Bucket, key)
-		}()
+		})
 
 		app.serverError(c)
 		return

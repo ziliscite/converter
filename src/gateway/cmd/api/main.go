@@ -13,6 +13,7 @@ import (
 
 	"log/slog"
 	"os"
+	"sync"
 )
 
 type application struct {
@@ -20,6 +21,7 @@ type application struct {
 	rc  *resty.Client
 	fs  service.FileService
 	fp  service.FilePublisher
+	wg  sync.WaitGroup
 }
 
 func main() {
@@ -62,7 +64,7 @@ func main() {
 		fp:  filePublisher,
 	}
 
-	if err := app.run(); err != nil {
+	if err = app.run(); err != nil {
 		slog.Error("Error running application", "error", err.Error())
 		os.Exit(1)
 	}

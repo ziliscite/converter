@@ -1,13 +1,14 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/ziliscite/video-to-mp3/gateway/internal/domain"
 )
 
 type FilePublisher interface {
-	PublishVideo(video *domain.Video) error
+	PublishVideo(ctx context.Context, video *domain.Video) error
 }
 
 type publisher struct {
@@ -24,14 +25,7 @@ func NewPublisher(ac *amqp.Connection, queueName string) (FilePublisher, error) 
 	defer ch.Close()
 
 	// declare the video queue once during publisher initialization
-	vq, err := ch.QueueDeclare(
-		queueName,
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
+	vq, err := ch.QueueDeclare(queueName, false, false, false, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +36,7 @@ func NewPublisher(ac *amqp.Connection, queueName string) (FilePublisher, error) 
 	}, nil
 }
 
-func (p *publisher) PublishVideo(video *domain.Video) error {
+func (p *publisher) PublishVideo(ctx context.Context, video *domain.Video) error {
 	ch, err := p.ac.Channel()
 	if err != nil {
 		return err
@@ -55,7 +49,7 @@ func (p *publisher) PublishVideo(video *domain.Video) error {
 		return err
 	}
 
-	return ch.Publish(
+	return ch.PublishWithContext(ctx,
 		"",
 		p.vq.Name,
 		false,

@@ -24,6 +24,7 @@ func (c *Converter) ConvertMP4ToMP3(filename string, video io.Reader) (string, e
 		return "", fmt.Errorf("failed to create temporary file: %v", err)
 	}
 	defer inputFile.Close()
+	defer os.Remove(inputFile.Name())
 
 	body, err := io.ReadAll(video)
 	if err != nil {
