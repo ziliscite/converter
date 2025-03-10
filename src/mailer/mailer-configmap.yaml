@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: mailer-configmap
+data:
+    AMQP_HOST: "b-b96ce6cb-6f40-47e3-9208-78102caa3a82.mq.ap-southeast-1.amazonaws.com"
+    AMQP_USERNAME: "ziliscite"
+    AMQP_PORT: "5671"
+    AMQP_VIDEO_QUEUE_NAME: "video_queue"
+    AMQP_NOTIFICATION_QUEUE_NAME: "notification_queue"
+    SMTP_HOST: "sandbox.smtp.mailtrap.io"
+    SMTP_PORT: "25"
+    SMTP_USERNAME: "b460c719fc699b"
+    SMTP_FROM: "Ziliconv <no-reply@ziliconv.ziliscite.id>"

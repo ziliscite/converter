@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mailer
+    labels:
+        app: mailer
+spec:
+    replicas: 2
+    selector:
+        matchLabels:
+            app: mailer
+    strategy:
+        type: RollingUpdate
+        rollingUpdate:
+            maxSurge: 3
+    template:
+        metadata:
+            labels:
+                app: mailer
+        spec:
+            # pull container from dockerhub
+            containers:
+              - name: mailer
+                image: ziliscite/video-to-mp4-mailer
+                imagePullPolicy: Always
+                ports:
+                    - containerPort: 3001
+                envFrom:
+                    - configMapRef:
+                        name: mailer-configmap
+                    - secretRef:
+                        name: mailer-secrets

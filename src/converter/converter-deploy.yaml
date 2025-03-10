@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: converter
+    labels:
+        app: converter
+spec:
+    replicas: 2
+    selector:
+        matchLabels:
+            app: converter
+    strategy:
+        type: RollingUpdate
+        rollingUpdate:
+            maxSurge: 3
+    template:
+        metadata:
+            labels:
+                app: converter
+        spec:
+            # pull container from dockerhub
+            containers:
+              - name: converter
+                image: ziliscite/video-to-mp4-converter
+                imagePullPolicy: Always
+                ports:
+                    - containerPort: 3000
+                envFrom:
+                    - configMapRef:
+                        name: converter-configmap
+                    - secretRef:
+                        name: converter-secrets
